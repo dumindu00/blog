@@ -1,6 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const Post = require('../models/Post');
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const streamifier = require('streamifier');
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Multer setup for memory storage
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 // GET posts by pageName
 router.get('/:pageName', async (req, res) => {
@@ -14,10 +28,29 @@ router.get('/:pageName', async (req, res) => {
   }
 });
 
-// POST create new post
-router.post('/', async (req, res) => {
+// POST create new post with optional image upload
+router.post('/', upload.single('image'), async (req, res) => {
   try {
-    const { pageName, title, description, image, link } = req.body;
+    const { pageName, title, description, link } = req.body;
+    let image = req.body.image || '';
+
+    if (req.file) {
+      const streamUpload = (reqFile) => {
+        return new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: 'blog_posts' },
+            (error, result) => {
+              if (result) resolve(result);
+              else reject(error);
+            }
+          );
+          streamifier.createReadStream(reqFile.buffer).pipe(stream);
+        });
+      };
+      const result = await streamUpload(req.file);
+      image = result.secure_url;
+    }
+
     const post = new Post({ pageName, title, description, image, link });
     await post.save();
     res.status(201).json(post);
@@ -27,11 +60,29 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT update existing post by id
-router.put('/:id', async (req, res) => {
+// PUT update existing post
+router.put('/:id', upload.single('image'), async (req, res) => {
   try {
     const { id } = req.params;
-    const update = req.body;
+    const update = { ...req.body };
+
+    if (req.file) {
+      const streamUpload = (reqFile) => {
+        return new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: 'blog_posts' },
+            (error, result) => {
+              if (result) resolve(result);
+              else reject(error);
+            }
+          );
+          streamifier.createReadStream(reqFile.buffer).pipe(stream);
+        });
+      };
+      const result = await streamUpload(req.file);
+      update.image = result.secure_url;
+    }
+
     const post = await Post.findByIdAndUpdate(id, update, { new: true });
     if (!post) return res.status(404).json({ error: 'Post not found' });
     res.json(post);
