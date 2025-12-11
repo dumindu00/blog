@@ -30,8 +30,8 @@ router.get('/:pageName', async (req, res) => {
 
 // POST create new post with optional image upload
 router.post('/', upload.single('image'), async (req, res) => {
-  
-    console.log("req.body:", req.body); // <-- log text fields
+  console.log("=== NEW POST REQUEST ===");
+  console.log("req.body:", req.body); // <-- log text fields
   console.log("req.file:", req.file); // <-- log uploaded file
   
   
