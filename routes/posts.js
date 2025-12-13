@@ -4,7 +4,7 @@ const Post = require('../models/Post');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const streamifier = require('streamifier');
-
+const adminAuth = require('../middleware/adminAuth');
 // Configure Cloudinary
 cloudinary.config(process.env.CLOUDINARY_URL);
 
@@ -25,7 +25,7 @@ router.get('/:pageName', async (req, res) => {
 });
 
 // POST create new post with optional image upload
-router.post('/', upload.single('image'), async (req, res) => {
+router.post('/', adminAuth, upload.single('image'), async (req, res) => {
   console.log("=== NEW POST REQUEST ===");
   console.log("req.body:", req.body); // <-- log text fields
   console.log("req.file:", req.file); // <-- log uploaded file
@@ -63,7 +63,7 @@ router.post('/', upload.single('image'), async (req, res) => {
 });
 
 // PUT update existing post
-router.put('/:id', upload.single('image'), async (req, res) => {
+router.put('/:id', adminAuth, upload.single('image'), async (req, res) => {
   try {
     const { id } = req.params;
     const update = { ...req.body };
@@ -95,7 +95,7 @@ router.put('/:id', upload.single('image'), async (req, res) => {
 });
 
 // DELETE post
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const post = await Post.findByIdAndDelete(id);

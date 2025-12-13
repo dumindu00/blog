@@ -3,11 +3,17 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
+
 const postsRouter = require('./routes/posts');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+
+const adminRouter = require('./routes/admin');
+
+app.use('/api/admin', adminRouter);
 
 // API routes
 app.use('/api/posts', postsRouter);
